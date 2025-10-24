@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Chat Bot</title>
+<style>
+    :root {
+        --bg-color: #FFE0B2;
+        --chat-bg: #ffffff;
+        --bot-bubble: #FF6F00;
+        --user-bubble: #d1d1d1;
+        --text-color: #000000;
+        --header-bg: #FF6F00;
+        --header-color: #ffffff;
+    }
+    body.dark {
+        --bg-color: #2c2c2c;
+        --chat-bg: #3a3a3a;
+        --bot-bubble: #ff9800;
+        --user-bubble: #555555;
+        --text-color: #e0e0e0;
+        --header-bg: #333333;
+        --header-color: #ffffff;
+    }
+    body {
+        background-color: var(--bg-color);
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        transition: background-color 0.3s ease;
+    }
+    .chat-container {
+        background-color: var(--chat-bg);
+        border-radius: 15px;
+        width: 400px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        overflow: hidden;
+    }
+    .chat-header {
+        background-color: var(--header-bg);
+        color: var(--header-color);
+        padding: 15px;
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+        position: relative;
+    }
+    .dark-toggle {
+        position: absolute;
+        top: 12px;
+        right: 15px;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+    }
+    .chat-messages {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background-color: var(--bg-color);
+        transition: background-color 0.3s ease;
+    }
+    .message {
+        display: flex;
+        align-items: flex-start;
+    }
+    .message.bot {
+        justify-content: flex-start;
+    }
+    .message.user {
+        justify-content: flex-end;
+    }
+    .bubble {
+        max-width: 70%;
+        padding: 10px 15px; /* constante padding voor alle berichten */
+        border-radius: 15px;
+        font-size: 14px;
+        word-wrap: break-word;
+        position: relative;
+        color: var(--text-color);
+        box-sizing: border-box;
+    }
+    /* Reset margin van alle tags binnen de bubble */
+    .bubble p, .bubble ul, .bubble li {
+        margin: 0;
+        padding: 0;
+    }
+    .message.bot .bubble {
+        background-color: var(--bot-bubble);
+        color: white;
+        border-top-left-radius: 0;
+    }
+    .message.user .bubble {
+        background-color: var(--user-bubble);
+        border-top-right-radius: 0;
+    }
+    .bot-icon {
+        width: 30px;
+        height: 30px;
+        margin-right: 10px;
+        background-image: url('https://img.icons8.com/ios-filled/50/FF6F00/robot-head.png');
+        background-size: cover;
+        flex-shrink: 0;
+    }
+    body.dark .bot-icon {
+        filter: brightness(0) invert(1);
+    }
+    .input-wrapper {
+        display: flex;
+        padding: 10px;
+        border-top: 1px solid #ccc;
+        background-color: #FFE0B2;
+        align-items: center;
+    }
+    body.dark .input-wrapper {
+        background-color: #3a3a3a;
+        border-top: 1px solid #555;
+    }
+    #question {
+        flex: 1;
+        padding: 10px;
+        border-radius: 20px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+        outline: none;
+        background-color: white;
+    }
+    body.dark #question {
+        background-color: #555;
+        color: white;
+        border: 1px solid #777;
+    }
+    .send-btn, .mic-btn {
+        margin-left: 10px;
+        padding: 10px 15px;
+        border-radius: 50%;
+        border: none;
+        background-color: var(--bot-bubble);
+        color: white;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    .mic-btn.listening {
+        background-color: #d32f2f;
+    }
+    @keyframes bounce {
+        0% { transform: scale(0.95); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    .bubble.bot.new { animation: bounce 0.3s ease; }
+</style>
+</head>
+<body>
+<div class="chat-container">
+    <div class="chat-header">
+        Chat Bot
+        <button class="dark-toggle" id="darkToggle">🌙</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="input-wrapper">
+        <input type="text" id="question" placeholder="Typ of spreek je vraag...">
+        <button class="mic-btn" id="micBtn">🎤</button>
+        <button class="send-btn" id="sendBtn">➤</button>
+    </div>
+</div>
+
+<script>
+const chatMessages = document.getElementById('chatMessages');
+const questionInput = document.getElementById('question');
+const sendBtn = document.getElementById('sendBtn');
+const micBtn = document.getElementById('micBtn');
+const darkToggle = document.getElementById('darkToggle');
+
+window.addEventListener('load', () => {
+    const welcomeBubble = document.createElement('div');
+    welcomeBubble.className = 'message bot';
+    welcomeBubble.innerHTML = `<div class="bot-icon"></div><div class="bubble bot new">Welkom! Stel je vraag.</div>`;
+    chatMessages.appendChild(welcomeBubble);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    setTimeout(() => welcomeBubble.querySelector('.bubble').classList.remove('new'), 300);
+    speechSynthesis.speak(new SpeechSynthesisUtterance("Welkom! Stel je vraag."));
+});
+
+async function askQuestion() {
+    const question = questionInput.value.trim();
+    if (!question) return;
+
+    const userBubble = document.createElement('div');
+    userBubble.className = 'message user';
+    userBubble.innerHTML = `<div class="bubble">${question}</div>`;
+    chatMessages.appendChild(userBubble);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    questionInput.value = '';
+
+    const typingBubble = document.createElement('div');
+    typingBubble.className = 'message bot';
+    typingBubble.innerHTML = `<div class="bot-icon"></div><div class="bubble bot">...</div>`;
+    chatMessages.appendChild(typingBubble);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    try {
+        const response = await fetch(`http://127.0.0.1:8000/ask?question=${encodeURIComponent(question)}`);
+        const data = await response.json();
+        typingBubble.remove();
+
+        const botBubble = document.createElement('div');
+        botBubble.className = 'message bot';
+
+        // Als antwoord nog geen HTML bevat, URLs klikbaar maken en paragrafen <p> wrap
+        let answerHTML = data.answer;
+        if (!/<[a-z][\s\S]*>/i.test(answerHTML)) {
+            answerHTML = answerHTML
+                .split('\n\n')
+                .map(paragraph => {
+                    paragraph = paragraph.replace(/(https?:\/\/[^\s]+)/g, url => `<a href="${url}" target="_blank">${url}</a>`);
+                    return `<p>${paragraph}</p>`;
+                }).join('');
+        }
+
+        botBubble.innerHTML = `<div class="bot-icon"></div><div class="bubble bot new">${answerHTML}</div>`;
+        chatMessages.appendChild(botBubble);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        setTimeout(() => botBubble.querySelector('.bubble').classList.remove('new'), 300);
+
+        speechSynthesis.speak(new SpeechSynthesisUtterance(data.answer));
+    } catch (err) {
+        console.error('Error:', err);
+        typingBubble.remove();
+    }
+}
+
+sendBtn.addEventListener('click', askQuestion);
+questionInput.addEventListener('keypress', e => { if (e.key === 'Enter') askQuestion(); });
+
+darkToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    darkToggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+});
+</script>
+</body>
+</html>
