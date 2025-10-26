@@ -1,2 +1,3 @@
 #!/bin/bash
-python ppapi.py
+python3 ppapi.py
+
