@@ -8,5 +8,5 @@ Chatbot for hotelprofessionals. Digital assistant answer questions of clients on
 4. Redeploy the service. Once the build finishes the FastAPI app will be available on the Railway-generated URL.
 
 ### Useful notes
-- If you ship the official Perplexity client, add the appropriate package (or private wheel URL) to requirements.txt; otherwise the /ask endpoint returns a 503.
+- De backend belt rechtstreeks naar de Perplexity REST API, dus er is geen aparte SDK-installatie nodig.
 - The start.sh script expects the PORT variable that Railway injects automatically.
