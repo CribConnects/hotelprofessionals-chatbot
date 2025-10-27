@@ -1,8 +1,9 @@
-from fastapi import FastAPI, Query
+import os
+
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-# 🔑 Jouw API sleutel hier invullen
-PPLX_API_KEY = "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"
+PPLX_API_KEY = os.getenv("PPLX_API_KEY")
 
 app = FastAPI()
 
@@ -15,17 +16,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Probeer perplexity te importeren, anders mock
-try:
-    from perplexity import Perplexity
-    client = Perplexity(api_key=PPLX_API_KEY)
-except ImportError:
-    client = None
+client = None
+if PPLX_API_KEY:
+    try:
+        # De officiele client gebruiken zodra deze geinstalleerd is
+        from perplexity import Perplexity
+
+        client = Perplexity(api_key=PPLX_API_KEY)
+    except ImportError:
+        # Dependency ontbreekt, laat de endpoint hierop reageren
+        client = None
+
 
 @app.get("/ask")
 def ask(question: str = Query(..., description="De vraag van de gebruiker")):
+    if not PPLX_API_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="PPLX_API_KEY environment variable ontbreekt.",
+        )
+
     if client is None:
-        return {"answer": "Perplexity module niet beschikbaar, tijdelijk uitgeschakeld."}
+        raise HTTPException(
+            status_code=503,
+            detail="Perplexity client niet beschikbaar; controleer dependencies.",
+        )
 
     try:
         completion = client.chat.completions.create(
@@ -39,10 +54,12 @@ def ask(question: str = Query(..., description="De vraag van de gebruiker")):
         answer = completion.choices[0].message.content
         return {"answer": answer}
 
-    except Exception as e:
-        return {"error": str(e)}
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
 
 if __name__ == "__main__":
-    import uvicorn, os
+    import uvicorn
+
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
