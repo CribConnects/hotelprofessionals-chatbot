@@ -31,9 +31,6 @@ def cleanup_old_sessions():
 # Initialize FastAPI app
 app = FastAPI(title="HotelProfessionals Chatbot")
 
-# Serve frontend from the 'static' folder
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
-
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -228,6 +225,10 @@ def get_stats() -> Dict[str, Any]:
             for sid, data in sessions.items()
         ]
     }
+
+# Mount static files AFTER all API routes to prevent route conflicts
+# This ensures API endpoints are matched before the static file handler
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
