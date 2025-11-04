@@ -7,6 +7,7 @@ import requests
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 import asyncio
 from contextlib import asynccontextmanager
 
@@ -34,6 +35,8 @@ def cleanup_old_sessions():
 
 # Initialize FastAPI app
 app = FastAPI(title="HotelProfessionals Chatbot")
+# Serveer de frontend vanuit de 'static' map
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 # CORS middleware - allows frontend to communicate with backend
 app.add_middleware(
@@ -66,10 +69,10 @@ Help bezoekers uitsluitend met vacatures in de horeca en hotelsector op HotelPro
 - Begin geen antwoord met willekeurige voorbeelden of vacatures zonder dat de gebruiker eerst duidelijk aangeeft wat hij/zij zoekt.
 """
 
-@app.get("/")
-def read_root() -> Dict[str, str]:
-    """Health check endpoint"""
-    return {"status": "ok", "service": "HotelProfessionals Chatbot"}
+#@app.get("/")
+#def read_root() -> Dict[str, str]:
+ #   """Health check endpoint"""
+  #  return {"status": "ok", "service": "HotelProfessionals Chatbot"}
 
 
 @app.post("/new_session")
