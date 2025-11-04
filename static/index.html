@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>HotelProfessionals Chat Bot</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --chat-bg: rgba(255, 255, 255, 0.42);
+            --bot-bubble: #F57C00;
+            --user-bubble: #e8e8e8;
+            --text-color: #1d1d1f;
+            --header-bg: #F57C00;
+            --header-color: #ffffff;
+            --accent-color: #F57C00;
+        }
+        body.dark {
+            --bg-color: #1a1a1a;
+            --chat-bg: rgba(42, 42, 42, 0.45);
+            --bot-bubble: #FB8C00;
+            --user-bubble: #3a3a3a;
+            --text-color: #f5f5f7;
+            --header-bg: #2d2d2d;
+            --header-color: #f5f5f7;
+            --accent-color: #FB8C00;
+        }
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        body { 
+            background-color: var(--bg-color); 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            margin: 0; 
+            padding: 0;
+            transition: background-color 0.3s ease; 
+            min-height: 100vh;
+        }
+        
+        /* Demo Website Styles */
+        .demo-website {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #FFE0B2 0%, #FFCC80 100%);
+        }
+        
+        .site-header {
+            background: linear-gradient(135deg, #F57C00 0%, #E65100 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .main-nav {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .main-nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+        
+        .main-nav a:hover {
+            opacity: 0.8;
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 80px 20px;
+            color: #333;
+        }
+        
+        .hero h1 {
+            font-size: 48px;
+            margin: 0 0 20px 0;
+            color: #F57C00;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+        
+        .hero p {
+            font-size: 20px;
+            color: #555;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .content-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px 120px 20px;
+        }
+        
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+        
+        @media (max-width: 768px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+        }
+        
+        .content-text h2 {
+            font-size: 36px;
+            color: #F57C00;
+            margin: 0 0 20px 0;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .content-text p {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .content-text .btn-primary {
+            margin-top: 10px;
+        }
+        
+        .content-image {
+            width: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .content-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.3s;
+        }
+        
+        .content-image:hover img {
+            transform: scale(1.05);
+        }
+        
+        .btn-primary {
+            display: inline-block;
+            background: linear-gradient(135deg, #F57C00 0%, #E65100 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 24px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 124, 0, 0.4);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .site-footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+        }
+        
+        .site-footer p {
+            margin: 0;
+        }
+        
+        /* Dark mode adjustments for website */
+        body.dark .demo-website {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2c2c2c 100%);
+        }
+        
+        body.dark .hero h1,
+        body.dark .content-text h2 {
+            color: #FB8C00;
+        }
+        
+        body.dark .hero p,
+        body.dark .content-text p {
+            color: #d1d1d6;
+        }
+        .chat-container { 
+            background-color: var(--chat-bg); 
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border-radius: 20px; 
+            width: 400px; 
+            display: flex; 
+            flex-direction: column; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden; 
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            transition: height 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease, background-color 0.35s ease, backdrop-filter 0.35s ease, -webkit-backdrop-filter 0.35s ease;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transform-origin: bottom center;
+            will-change: height;
+        }
+        body.dark .chat-container {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .chat-container.animating {
+            pointer-events: none;
+        }
+        .chat-container.collapsed {
+            height: 54px;
+            background-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0,0,0,0);
+            backdrop-filter: blur(0px) saturate(140%);
+            -webkit-backdrop-filter: blur(0px) saturate(140%);
+            border-color: rgba(255, 255, 255, 0);
+        }
+        .chat-container.expanded {
+            height: 600px;
+            max-height: 80vh;
+        }
+        body.dark .chat-container.collapsed {
+            background-color: rgba(42, 42, 42, 0.12);
+            border-color: rgba(255, 255, 255, 0);
+            box-shadow: 0 8px 32px rgba(0,0,0,0);
+        }
+        .chat-header { 
+            background: linear-gradient(135deg, var(--header-bg) 0%, #E65100 100%);
+            color: var(--header-color); 
+            padding: 16px 20px; 
+            text-align: center; 
+            font-size: 17px; 
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            position: relative;
+            display: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        body.dark .chat-header {
+            background: var(--header-bg);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .chat-container.expanded .chat-header {
+            display: block;
+        }
+        .collapse-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 16px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: none;
+            color: white;
+            cursor: pointer;
+            line-height: 1;
+            padding: 5px 6px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .collapse-icon {
+            display: inline-block;
+            font-size: 11px;
+            line-height: 1;
+            transform: translateY(-1px);
+        }
+        .collapse-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-50%) scale(1.05);
+            opacity: 1;
+        }
+        .collapse-btn:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        .dark-toggle { 
+            position: absolute; 
+            top: 50%;
+            transform: translateY(-50%);
+            right: 16px; 
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: none; 
+            color: white; 
+            font-size: 16px; 
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .dark-toggle:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-50%) scale(1.05);
+        }
+        .dark-toggle:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        .collapsed-search {
+            display: none;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .chat-container.collapsed .collapsed-search {
+            display: block;
+        }
+.collapsed-search input {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 9999px; /* zorgt voor perfect ovaal */
+    border: none;
+    font-size: 15px;
+    outline: none;
+    background-color: rgba(255, 255, 255, 0.95);
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    box-shadow: none; /* verwijdert de halo */
+    font-family: inherit;
+    font-weight: 400;
+    color: var(--text-color);
+}
+
+        .collapsed-search input::placeholder {
+            color: #86868b;
+        }
+        .collapsed-search input:hover {
+            box-shadow: 0 6px 20px rgba(245, 124, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
+        }
+        body.dark .collapsed-search input {
+            background-color: rgba(60, 60, 67, 0.95);
+            color: #f5f5f7;
+            box-shadow: none;
+        }
+        body.dark .collapsed-search input::placeholder {
+            color: #8e8e93;
+        }
+        body.dark .collapsed-search input:hover {
+            box-shadow: 0 6px 20px rgba(251, 140, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .collapsed-search input:focus {
+            cursor: text;
+        }
+        .chat-messages { 
+            flex: 1; 
+            padding: 16px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            background-color: transparent;
+            transition: background-color 0.3s ease;
+            display: none;
+        }
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+        body.dark .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .chat-container.expanded .chat-messages {
+            display: flex;
+        }
+        .message { 
+            display: flex; 
+            align-items: flex-start; 
+        }
+        .message.bot { 
+            justify-content: flex-start; 
+        }
+        .message.user { 
+            justify-content: flex-end; 
+        }
+        .bubble { 
+            max-width: 75%; 
+            padding: 12px 16px; 
+            border-radius: 18px; 
+            font-size: 15px;
+            line-height: 1.5;
+            word-wrap: break-word; 
+            position: relative; 
+            color: var(--text-color);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        }
+        .bubble a {
+            color: inherit;
+            text-decoration: underline;
+            font-weight: 500;
+            text-underline-offset: 2px;
+        }
+        .bubble a:hover {
+            opacity: 0.8;
+        }
+        .message.bot .bubble { 
+            background: linear-gradient(135deg, var(--bot-bubble) 0%, #E65100 100%);
+            color: white; 
+            border-top-left-radius: 4px;
+        }
+        .message.user .bubble { 
+            background-color: var(--user-bubble); 
+            border-top-right-radius: 4px;
+        }
+        .bot-icon { 
+            width: 30px; 
+            height: 30px; 
+            margin-right: 10px; 
+            background-image: url('https://img.icons8.com/ios-filled/50/FF6F00/robot-head.png'); 
+            background-size: cover; 
+            flex-shrink: 0; 
+        }
+        body.dark .bot-icon { 
+            filter: brightness(0) invert(1); 
+        }
+        .input-wrapper { 
+            display: flex; 
+            padding: 12px 16px 16px 16px; 
+            border-top: 1px solid rgba(0, 0, 0, 0.06); 
+            background: transparent;
+            align-items: center;
+            display: none;
+            gap: 8px;
+        }
+        .chat-container.expanded .input-wrapper {
+            display: flex;
+        }
+        body.dark .input-wrapper { 
+            border-top: 1px solid rgba(255, 255, 255, 0.08); 
+        }
+        #question { 
+            flex: 1; 
+            padding: 12px 16px; 
+            border-radius: 20px; 
+            border: 1px solid rgba(0, 0, 0, 0.1); 
+            font-size: 15px; 
+            outline: none; 
+            background-color: rgba(255, 255, 255, 0.8);
+            font-family: inherit;
+            transition: all 0.2s ease;
+            color: var(--text-color);
+        }
+        #question:focus {
+            border-color: var(--accent-color);
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(245, 124, 0, 0.1);
+        }
+        body.dark #question { 
+            background-color: rgba(60, 60, 67, 0.8); 
+            color: #f5f5f7; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+        }
+        body.dark #question:focus {
+            background-color: rgba(60, 60, 67, 1);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(251, 140, 0, 0.15);
+        }
+        .send-btn, .mic-btn { 
+            margin-left: 0;
+            padding: 0;
+            border-radius: 50%; 
+            border: none; 
+            background-color: var(--accent-color); 
+            color: white; 
+            cursor: pointer; 
+            font-size: 18px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(245, 124, 0, 0.3);
+        }
+        .send-btn:hover, .mic-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(245, 124, 0, 0.4);
+        }
+        .send-btn:active, .mic-btn:active {
+            transform: scale(0.95);
+        }
+        .send-btn:disabled, .mic-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .mic-btn.listening { 
+            background-color: #EF5350;
+            animation: pulse 1.5s ease-in-out infinite;
+            box-shadow: 0 2px 8px rgba(239, 83, 80, 0.4);
+        }
+        @keyframes pulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 2px 8px rgba(239, 83, 80, 0.4);
+            }
+            50% { 
+                transform: scale(1.08);
+                box-shadow: 0 4px 16px rgba(239, 83, 80, 0.6);
+            }
+        }
+        @keyframes bounce { 
+            0% { transform: scale(0.95); } 
+            50% { transform: scale(1.05); } 
+            100% { transform: scale(1); } 
+        }
+        .bubble.bot.new { 
+            animation: bounce 0.3s ease; 
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-website">
+        <!-- Header -->
+        <header class="site-header">
+            <div class="header-content">
+                <div class="logo">🏨 HotelProfessionals</div>
+                <nav class="main-nav">
+                    <a href="#">Vacatures</a>
+                    <a href="#">Over ons</a>
+                    <a href="#">Contact</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Vind jouw droombaan in de horeca</h1>
+            <p>Ontdek de beste vacatures in hotels, restaurants en de hospitality sector</p>
+        </section>
+
+        <!-- Content Section -->
+        <section class="content-section">
+            <div class="content-wrapper">
+                <div class="content-text">
+                    <h2>Werken in de horeca</h2>
+                    <p>De hospitality sector biedt talloze mogelijkheden voor ambitieuze professionals. Of je nu aan het begin van je carrière staat of al jaren ervaring hebt, bij HotelProfessionals vind je de perfecte match.</p>
+                    <p>Van luxe hotels tot gezellige restaurants, van fine dining tot casual eateries - wij verbinden talent met de beste werkgevers in de branche. Ontdek jouw volgende stap in de gastvrijheidsindustrie.</p>
+                    <a href="#" class="btn-primary">Bekijk alle vacatures</a>
+                </div>
+                <div class="content-image">
+                    <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&h=400&fit=crop" alt="Restaurant interior">
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="site-footer">
+            <p>© 2025 HotelProfessionals.nl - Jouw carrière in de horeca</p>
+        </footer>
+    </div>
+
+    <!-- Chat Widget -->
+    <div class="chat-container collapsed">
+        <div class="collapsed-search">
+            <input type="text" id="collapsedSearchInput" placeholder="Zoek vacatures..." readonly>
+        </div>
+        <div class="chat-header">
+            HotelProfessionals Chat
+            <button class="collapse-btn" id="collapseBtn" aria-label="Chatvenster inklappen">
+                <span class="collapse-icon" aria-hidden="true">&#x2304;</span>
+            </button>
+            <button class="dark-toggle" id="darkToggle">◐</button>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="input-wrapper">
+            <input type="text" id="question" placeholder="Typ of spreek je vraag...">
+            <button class="mic-btn" id="micBtn">●</button>
+            <button class="send-btn" id="sendBtn">↑</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - IMPORTANT: Update this URL when deploying to Railway
+        const API_BASE_URL = 'https://hotelprofessionals-chatbot-production.up.railway.app';
+        
+        // DOM elements
+        const chatContainer = document.querySelector('.chat-container');
+        const chatMessages = document.getElementById('chatMessages');
+        const questionInput = document.getElementById('question');
+        const sendBtn = document.getElementById('sendBtn');
+        const micBtn = document.getElementById('micBtn');
+        const darkToggle = document.getElementById('darkToggle');
+        const collapseBtn = document.getElementById('collapseBtn');
+        const collapsedSearchInput = document.getElementById('collapsedSearchInput');
+
+        // Session management
+        let sessionId = null;
+        let isProcessing = false;
+        let isExpanded = false;
+        let hasShownWelcome = false;
+        const CHAT_TRANSITION_MS = 350;
+
+        function waitForHeightTransition(callback) {
+            let finished = false;
+
+            const cleanup = () => {
+                if (finished) return;
+                finished = true;
+                chatContainer.removeEventListener('transitionend', onTransitionEnd);
+                callback();
+            };
+
+            const onTransitionEnd = (event) => {
+                if (event.propertyName === 'height') {
+                    cleanup();
+                }
+            };
+
+            chatContainer.addEventListener('transitionend', onTransitionEnd);
+            setTimeout(cleanup, CHAT_TRANSITION_MS + 100);
+        }
+
+        // Expand/collapse functionality
+        function expandChat() {
+            if (isExpanded || chatContainer.classList.contains('animating')) {
+                questionInput.focus();
+                return;
+            }
+
+            chatContainer.classList.add('animating');
+            chatContainer.classList.remove('collapsed');
+            // Force reflow so the browser recognises the starting height before expanding
+            void chatContainer.offsetHeight;
+            chatContainer.classList.add('expanded');
+
+            waitForHeightTransition(() => {
+                chatContainer.classList.remove('animating');
+            });
+
+            isExpanded = true;
+            questionInput.focus();
+            
+            // Show welcome message on first expand
+            if (!hasShownWelcome) {
+                setTimeout(() => {
+                    addBotMessage("Welkom! Ik ben je assistent voor HotelProfessionals.nl. Stel gerust je vraag over vacatures in de horeca en hotelsector.", true, true);
+                    hasShownWelcome = true;
+                }, 200);
+            }
+        }
+
+        function collapseChat() {
+            if (!isExpanded || chatContainer.classList.contains('animating')) {
+                return;
+            }
+
+            chatContainer.classList.add('animating');
+            chatContainer.classList.remove('expanded');
+
+            waitForHeightTransition(() => {
+                chatContainer.classList.remove('animating');
+                chatContainer.classList.add('collapsed');
+            });
+
+            isExpanded = false;
+            questionInput.blur();
+        }
+
+        // Click on collapsed search bar to expand
+        collapsedSearchInput.addEventListener('click', expandChat);
+
+        // Collapse button
+        collapseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            collapseChat();
+        });
+
+        // Speech recognition setup
+        let recognition = null;
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = 'nl-NL';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+        }
+
+        // Text-to-speech voice selection
+        let selectedVoice = null;
+        let availableVoices = [];
+        
+        function loadVoices() {
+            availableVoices = speechSynthesis.getVoices();
+            console.log('Available voices:', availableVoices.map(v => `${v.name} (${v.lang})`));
+            
+            // Try to find best Dutch voice
+            const dutchVoices = availableVoices.filter(v => v.lang.includes('nl'));
+            
+            if (dutchVoices.length > 0) {
+                // Prefer Google or Microsoft voices
+                selectedVoice = dutchVoices.find(v => v.name.includes('Google') || v.name.includes('Microsoft')) || dutchVoices[0];
+            } else {
+                // No Dutch voice, use any
+                selectedVoice = availableVoices[0];
+            }
+            
+            console.log('Selected voice:', selectedVoice?.name || 'none');
+            
+            // Show available Dutch voices in console for debugging
+            if (dutchVoices.length > 0) {
+                console.log('Dutch voices available:', dutchVoices.map((v, i) => `${i}: ${v.name}`));
+            } else {
+                console.log('⚠️ No Dutch voices found! Install Dutch language pack in your system.');
+            }
+        }
+        
+        // Load voices when available
+        if ('speechSynthesis' in window) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
+        // Initialize chat on page load
+        window.addEventListener('load', async () => {
+            // Create new session
+            try {
+                const response = await fetch(`${API_BASE_URL}/new_session`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                sessionId = data.session_id;
+                console.log('Session created:', sessionId);
+            } catch (error) {
+                console.error('Failed to create session:', error);
+            }
+        });
+
+        // End session when page is closed
+        window.addEventListener('beforeunload', async () => {
+            if (sessionId) {
+                // Use sendBeacon for reliable request on page unload
+                const url = `${API_BASE_URL}/session/${sessionId}`;
+                navigator.sendBeacon(url, JSON.stringify({ method: 'DELETE' }));
+            }
+        });
+
+        // Dark mode toggle
+        darkToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            darkToggle.textContent = document.body.classList.contains('dark') ? '◑' : '◐';
+        });
+
+        // Send button click
+        sendBtn.addEventListener('click', askQuestion);
+
+        // Enter key to send
+        questionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !isProcessing) {
+                askQuestion();
+            }
+        });
+
+        // Microphone button
+        if (recognition) {
+            micBtn.addEventListener('click', () => {
+                if (micBtn.classList.contains('listening')) {
+                    recognition.stop();
+                } else {
+                    recognition.start();
+                    micBtn.classList.add('listening');
+                }
+            });
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                questionInput.value = transcript;
+                micBtn.classList.remove('listening');
+            };
+
+            recognition.onerror = () => {
+                micBtn.classList.remove('listening');
+            };
+
+            recognition.onend = () => {
+                micBtn.classList.remove('listening');
+            };
+        } else {
+            micBtn.style.display = 'none';
+        }
+
+        function addBotMessage(text, animate = true, speak = true) {
+            const botBubble = document.createElement('div');
+            botBubble.className = 'message bot';
+            
+            // Convert URLs to clickable links and preserve line breaks
+let htmlText = text
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>')
+    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');  // <-- dit erbij
+
+            
+            botBubble.innerHTML = `<div class="bot-icon"></div><div class="bubble bot ${animate ? 'new' : ''}">${htmlText}</div>`;
+            chatMessages.appendChild(botBubble);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            if (animate) {
+                setTimeout(() => botBubble.querySelector('.bubble').classList.remove('new'), 300);
+            }
+            
+            // Text-to-speech with better voice
+            if (speak && 'speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'nl-NL';
+                utterance.rate = 0.9; // Slightly slower for better clarity
+                utterance.pitch = 1.0;
+                
+                // Use selected voice if available
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+                
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        function addUserMessage(text) {
+            const userBubble = document.createElement('div');
+            userBubble.className = 'message user';
+            userBubble.innerHTML = `<div class="bubble">${text}</div>`;
+            chatMessages.appendChild(userBubble);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const typingBubble = document.createElement('div');
+            typingBubble.className = 'message bot';
+            typingBubble.id = 'typing-indicator';
+            typingBubble.innerHTML = `<div class="bot-icon"></div><div class="bubble bot">...</div>`;
+            chatMessages.appendChild(typingBubble);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typingBubble = document.getElementById('typing-indicator');
+            if (typingBubble) {
+                typingBubble.remove();
+            }
+        }
+
+        async function askQuestion() {
+            const question = questionInput.value.trim();
+            if (!question || isProcessing) return;
+
+            isProcessing = true;
+            sendBtn.disabled = true;
+            questionInput.disabled = true;
+
+            addUserMessage(question);
+            questionInput.value = '';
+            showTypingIndicator();
+
+            try {
+                const url = new URL(`${API_BASE_URL}/ask`);
+                url.searchParams.append('question', question);
+                if (sessionId) {
+                    url.searchParams.append('session_id', sessionId);
+                }
+
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                removeTypingIndicator();
+                
+                // Update session ID if returned (for new sessions)
+                if (data.session_id && !sessionId) {
+                    sessionId = data.session_id;
+                    console.log('Session ID updated:', sessionId);
+                }
+                
+                addBotMessage(data.answer);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                removeTypingIndicator();
+                addBotMessage('Sorry, er is een fout opgetreden. Probeer het opnieuw.');
+            } finally {
+                isProcessing = false;
+                sendBtn.disabled = false;
+                questionInput.disabled = false;
+                questionInput.focus();
+            }
+        }
+    </script>
+</body>
+</html>
