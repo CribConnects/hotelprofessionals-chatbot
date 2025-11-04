@@ -888,13 +888,58 @@ let htmlText = text
             showTypingIndicator();
 
             try {
-                const url = new URL(`${API_BASE_URL}/ask`);
-                url.searchParams.append('question', question);
-                if (sessionId) {
-                    url.searchParams.append('session_id', sessionId);
-                }
+                async function askQuestion() {
+    const question = questionInput.value.trim();
+    if (!question || isProcessing) return;
 
-                const response = await fetch(url);
+    isProcessing = true;
+    sendBtn.disabled = true;
+    questionInput.disabled = true;
+
+    addUserMessage(question);
+    questionInput.value = '';
+    showTypingIndicator();
+
+    try {
+        const payload = {
+            question: question,
+            session_id: sessionId,
+            search_domain_filter: ["hotelprofessionals.nl"]  // <-- extra veld toegevoegd
+        };
+
+        const response = await fetch(`${API_BASE_URL}/ask`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        removeTypingIndicator();
+
+        addBotMessage(data.answer);
+
+        // Update session ID if returned
+        if (data.session_id) sessionId = data.session_id;
+
+    } catch (error) {
+        console.error('Error:', error);
+        removeTypingIndicator();
+        addBotMessage('Sorry, er is een fout opgetreden. Probeer het opnieuw.');
+    } finally {
+        isProcessing = false;
+        sendBtn.disabled = false;
+        questionInput.disabled = false;
+        questionInput.focus();
+    }
+}
+
+                
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
