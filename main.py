@@ -32,7 +32,9 @@ def cleanup_old_sessions():
 app = FastAPI(title="HotelProfessionals Chatbot")
 
 # Serve frontend from the 'static' folder
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+#app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/static", StaticFiles(directory="static", html=True), name="static")
+
 
 # CORS middleware
 app.add_middleware(
@@ -214,7 +216,7 @@ def get_stats() -> Dict[str, Any]:
         ]
     }
 
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+#if __name__ == "__main__":
+#    import uvicorn
+ #   port = int(os.getenv("PORT", 8000))
+  #  uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
