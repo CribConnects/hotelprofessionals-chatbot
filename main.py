@@ -150,7 +150,9 @@ async def ask(
 
     # Debug logging
     print("Sending question to Perplexity API:", question[:50])
-    
+    print(f"Using API URL: {PERPLEXITY_API_URL}")
+    print(f"API key configured: {bool(PERPLEXITY_API_KEY)}")
+
     try:
         response = requests.post(
             PERPLEXITY_API_URL,
@@ -161,14 +163,23 @@ async def ask(
             },
             timeout=30,
         )
+        print(f"Perplexity API response status: {response.status_code}")
         response.raise_for_status()
-        
+
     except requests.Timeout:
+        print("ERROR: Perplexity API timeout")
         raise HTTPException(
             status_code=504,
             detail="Perplexity API timeout - please try again."
         )
     except requests.RequestException as exc:
+        print(f"ERROR: Perplexity API request failed: {str(exc)}")
+        # Add response body if available
+        try:
+            error_body = response.json() if response else None
+            print(f"Error response body: {error_body}")
+        except:
+            pass
         raise HTTPException(
             status_code=502,
             detail=f"Perplexity API request failed: {str(exc)}"
@@ -177,22 +188,26 @@ async def ask(
     # Parse response
     try:
         data = response.json()
+        print(f"Successfully parsed response JSON")
         answer = data["choices"][0]["message"]["content"]
-        
+        print(f"Answer length: {len(answer)} characters")
+
         # Store user question and bot response
         sessions[session_id]["messages"].append({"role": "user", "content": question})
         sessions[session_id]["messages"].append({"role": "assistant", "content": answer})
-        
+
         # Limit history
         if len(sessions[session_id]["messages"]) > 10:
             sessions[session_id]["messages"] = sessions[session_id]["messages"][-10:]
-        
+
         return {
             "answer": answer,
             "session_id": session_id
         }
-        
+
     except (KeyError, IndexError, TypeError) as exc:
+        print(f"ERROR: Failed to parse Perplexity response: {str(exc)}")
+        print(f"Response data: {data if 'data' in locals() else 'Unable to parse JSON'}")
         raise HTTPException(
             status_code=502,
             detail=f"Unexpected response format from Perplexity API: {str(exc)}"

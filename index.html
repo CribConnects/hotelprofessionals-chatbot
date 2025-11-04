@@ -895,27 +895,41 @@ let htmlText = text
                 }
 
                 const response = await fetch(url);
-                
+
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    // Try to get error details from backend
+                    let errorMessage = `HTTP ${response.status} error`;
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.detail) {
+                            errorMessage = errorData.detail;
+                        }
+                    } catch (e) {
+                        // If we can't parse JSON, use status text
+                        errorMessage = `${errorMessage}: ${response.statusText}`;
+                    }
+                    console.error('Backend error:', errorMessage);
+                    removeTypingIndicator();
+                    addBotMessage(`Sorry, er is een fout opgetreden: ${errorMessage}`);
+                    return;
                 }
-                
+
                 const data = await response.json();
-                
+
                 removeTypingIndicator();
-                
+
                 // Update session ID if returned (for new sessions)
                 if (data.session_id && !sessionId) {
                     sessionId = data.session_id;
                     console.log('Session ID updated:', sessionId);
                 }
-                
+
                 addBotMessage(data.answer);
-                
+
             } catch (error) {
                 console.error('Error:', error);
                 removeTypingIndicator();
-                addBotMessage('Sorry, er is een fout opgetreden. Probeer het opnieuw.');
+                addBotMessage(`Sorry, er is een fout opgetreden: ${error.message}`);
             } finally {
                 isProcessing = false;
                 sendBtn.disabled = false;
