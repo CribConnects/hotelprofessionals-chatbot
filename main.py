@@ -4,12 +4,9 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 import requests
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-import asyncio
-from contextlib import asynccontextmanager
 
 # Configuration
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
@@ -18,7 +15,6 @@ SESSION_TIMEOUT_MINUTES = 30
 
 # In-memory storage for conversation sessions
 sessions: Dict[str, Dict[str, Any]] = {}
-
 
 def cleanup_old_sessions():
     """Remove sessions that have been inactive for longer than SESSION_TIMEOUT_MINUTES"""
@@ -32,13 +28,13 @@ def cleanup_old_sessions():
         del sessions[session_id]
         print(f"Cleaned up expired session: {session_id}")
 
-
 # Initialize FastAPI app
 app = FastAPI(title="HotelProfessionals Chatbot")
-# Serveer de frontend vanuit de 'static' map
+
+# Serve frontend from the 'static' folder
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
-# CORS middleware - allows frontend to communicate with backend
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, replace with specific origins
@@ -47,7 +43,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# System prompt to keep the bot focused on hotelprofessionals.nl
+# System prompt
 SYSTEM_PROMPT = """🎯 Jij bent een behulpzame Nederlandse assistent voor HotelProfessionals.nl.
 
 🧠 Doel:
@@ -69,12 +65,6 @@ Help bezoekers uitsluitend met vacatures in de horeca en hotelsector op HotelPro
 - Begin geen antwoord met willekeurige voorbeelden of vacatures zonder dat de gebruiker eerst duidelijk aangeeft wat hij/zij zoekt.
 """
 
-#@app.get("/")
-#def read_root() -> Dict[str, str]:
- #   """Health check endpoint"""
-  #  return {"status": "ok", "service": "HotelProfessionals Chatbot"}
-
-
 @app.post("/new_session")
 def create_new_session() -> Dict[str, str]:
     """Create a new chat session and return session ID"""
@@ -87,6 +77,12 @@ def create_new_session() -> Dict[str, str]:
     print(f"Created new session: {session_id}")
     return {"session_id": session_id}
 
+@app.post("/session/{session_id}")
+def update_session(session_id: str) -> Dict[str, str]:
+    """Placeholder POST to match frontend requests"""
+    if session_id in sessions:
+        return {"status": "ok", "session_id": session_id}
+    raise HTTPException(status_code=404, detail="Session not found")
 
 @app.delete("/session/{session_id}")
 def end_session(session_id: str) -> Dict[str, str]:
@@ -97,24 +93,32 @@ def end_session(session_id: str) -> Dict[str, str]:
         return {"status": "success", "message": "Session ended"}
     return {"status": "not_found", "message": "Session not found"}
 
-
-@app.get("/ask")
+@app.api_route("/ask", methods=["GET", "POST"])
 async def ask(
-    question: str = Query(..., description="De vraag van de gebruiker"),
-    session_id: Optional[str] = Query(None, description="Session ID voor conversatie context")
+    question: Optional[str] = Query(None, description="De vraag van de gebruiker"),
+    session_id: Optional[str] = Query(None, description="Session ID voor conversatie context"),
+    body: Optional[Dict[str, Any]] = Body(None)
 ) -> Dict[str, Any]:
     """
     Main endpoint to ask questions to the chatbot.
     Maintains conversation history per session.
+    Supports both GET (query params) and POST (JSON body)
     """
     
+    # Use question from JSON body if present
+    if body and "question" in body:
+        question = body["question"]
+
+    if not question:
+        raise HTTPException(status_code=400, detail="No question provided.")
+
     if not PERPLEXITY_API_KEY:
         raise HTTPException(
             status_code=500,
             detail="PERPLEXITY_API_KEY environment variable is not set."
         )
     
-    # Create new session if none provided or if session doesn't exist
+    # Create new session if none provided or session doesn't exist
     if not session_id or session_id not in sessions:
         session_id = str(uuid.uuid4())
         sessions[session_id] = {
@@ -127,7 +131,7 @@ async def ask(
     # Update last activity timestamp
     sessions[session_id]["last_activity"] = datetime.now()
     
-    # Get conversation history for this session
+    # Get conversation history
     conversation_history = sessions[session_id]["messages"]
     
     # Build messages array for Perplexity API
@@ -143,6 +147,9 @@ async def ask(
         "temperature": 0.7,
         "max_tokens": 1000
     }
+
+    # Debug logging
+    print("Sending question to Perplexity API:", question[:50])
     
     try:
         response = requests.post(
@@ -167,16 +174,16 @@ async def ask(
             detail=f"Perplexity API request failed: {str(exc)}"
         )
     
-    # Parse response from Perplexity
+    # Parse response
     try:
         data = response.json()
         answer = data["choices"][0]["message"]["content"]
         
-        # Store user question and bot response in session history
+        # Store user question and bot response
         sessions[session_id]["messages"].append({"role": "user", "content": question})
         sessions[session_id]["messages"].append({"role": "assistant", "content": answer})
         
-        # Limit history to last 10 messages (5 exchanges) to prevent token overflow
+        # Limit history
         if len(sessions[session_id]["messages"]) > 10:
             sessions[session_id]["messages"] = sessions[session_id]["messages"][-10:]
         
@@ -190,7 +197,6 @@ async def ask(
             status_code=502,
             detail=f"Unexpected response format from Perplexity API: {str(exc)}"
         )
-
 
 @app.get("/stats")
 def get_stats() -> Dict[str, Any]:
@@ -207,7 +213,6 @@ def get_stats() -> Dict[str, Any]:
             for sid, data in sessions.items()
         ]
     }
-
 
 if __name__ == "__main__":
     import uvicorn
