@@ -671,7 +671,7 @@
             // Show welcome message on first expand
             if (!hasShownWelcome) {
                 setTimeout(() => {
-                    addBotMessage("Welkom! Ik ben je assistent voor HotelProfessionals.nl. Stel gerust je vraag over vacatures in de horeca en hotelsector.", true, true);
+                    addBotMessage("Welkom! Ik ben je assistent voor HotelProfessionals.nl. Stel gerust je vraag over vacatures in de horeca en hotelsector.", true);
                     hasShownWelcome = true;
                 }, 200);
             }
@@ -712,40 +712,6 @@
             recognition.interimResults = false;
         }
 
-        // Text-to-speech voice selection
-        let selectedVoice = null;
-        let availableVoices = [];
-        
-        function loadVoices() {
-            availableVoices = speechSynthesis.getVoices();
-            console.log('Available voices:', availableVoices.map(v => `${v.name} (${v.lang})`));
-            
-            // Try to find best Dutch voice
-            const dutchVoices = availableVoices.filter(v => v.lang.includes('nl'));
-            
-            if (dutchVoices.length > 0) {
-                // Prefer Google or Microsoft voices
-                selectedVoice = dutchVoices.find(v => v.name.includes('Google') || v.name.includes('Microsoft')) || dutchVoices[0];
-            } else {
-                // No Dutch voice, use any
-                selectedVoice = availableVoices[0];
-            }
-            
-            console.log('Selected voice:', selectedVoice?.name || 'none');
-            
-            // Show available Dutch voices in console for debugging
-            if (dutchVoices.length > 0) {
-                console.log('Dutch voices available:', dutchVoices.map((v, i) => `${i}: ${v.name}`));
-            } else {
-                console.log('⚠️ No Dutch voices found! Install Dutch language pack in your system.');
-            }
-        }
-        
-        // Load voices when available
-        if ('speechSynthesis' in window) {
-            speechSynthesis.onvoiceschanged = loadVoices;
-            loadVoices();
-        }
 
         // Initialize chat on page load
         window.addEventListener('load', async () => {
@@ -815,10 +781,10 @@
             micBtn.style.display = 'none';
         }
 
-        function addBotMessage(text, animate = true, speak = true) {
+        function addBotMessage(text, animate = true) {
             const botBubble = document.createElement('div');
             botBubble.className = 'message bot';
-            
+
             // Convert URLs to clickable links and preserve line breaks
 let htmlText = text
     .replace(/\n\n/g, '<br><br>')
@@ -826,28 +792,13 @@ let htmlText = text
     .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');  // <-- dit erbij
 
-            
+
             botBubble.innerHTML = `<div class="bot-icon"></div><div class="bubble bot ${animate ? 'new' : ''}">${htmlText}</div>`;
             chatMessages.appendChild(botBubble);
             chatMessages.scrollTop = chatMessages.scrollHeight;
-            
+
             if (animate) {
                 setTimeout(() => botBubble.querySelector('.bubble').classList.remove('new'), 300);
-            }
-            
-            // Text-to-speech with better voice
-            if (speak && 'speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'nl-NL';
-                utterance.rate = 0.9; // Slightly slower for better clarity
-                utterance.pitch = 1.0;
-                
-                // Use selected voice if available
-                if (selectedVoice) {
-                    utterance.voice = selectedVoice;
-                }
-                
-                speechSynthesis.speak(utterance);
             }
         }
 
